@@ -42,7 +42,7 @@ function connectDB(){
     }
 }
 
-app.get("/test" , (req , res)=>{
+app.get("/api/test" , (req , res)=>{
     res.json({
         success:true,
     })
@@ -79,7 +79,7 @@ function getUserDataFromReq(req){
     })
 }
 
-app.post("/register" , async (req , res)=>{
+app.post("/api/register" , async (req , res)=>{
     connectDB();
     const {name , email , password} = req.body;
     try {
@@ -94,7 +94,7 @@ app.post("/register" , async (req , res)=>{
     }
 })
 
-app.post("/login" , async (req , res)=>{
+app.post("/api/login" , async (req , res)=>{
     connectDB();
     try {
         const {email , password} = req.body;
@@ -130,14 +130,14 @@ app.post("/login" , async (req , res)=>{
     }
 })
 
-app.post("/logout" , (req , res)=>{
+app.post("/api/logout" , (req , res)=>{
     connectDB();
     res.cookie("token" , "" , {
         expires:new Date(Date.now()),
     }).json(true);
 })
 
-app.get("/profile" , (req , res)=>{
+app.get("/api/profile" , (req , res)=>{
     connectDB();
     try{
         const {token} = req.cookies;
@@ -156,7 +156,7 @@ app.get("/profile" , (req , res)=>{
 })
 
 
-app.post('/upload-by-link' , async (req , res)=>{
+app.post('/api/upload-by-link' , async (req , res)=>{
     connectDB();
     const {link} = req.body;
     const newName = 'photo'+Date.now() + '.jpg';
@@ -170,7 +170,7 @@ app.post('/upload-by-link' , async (req , res)=>{
 
 const photosMiddleWare = multer({dest:"/tmp"});
 
-app.post("/upload" , photosMiddleWare.array("photos" , 100) , async (req , res)=>{
+app.post("/api/upload" , photosMiddleWare.array("photos" , 100) , async (req , res)=>{
     connectDB();
     const uploadedfiles = [];
     for(let i =0;i<req.files.length;i++){
@@ -181,7 +181,7 @@ app.post("/upload" , photosMiddleWare.array("photos" , 100) , async (req , res)=
     res.json(uploadedfiles);
 });
 
-app.post("/places" , (req , res)=>{
+app.post("/api/places" , (req , res)=>{
     connectDB();
        const {token} = req.cookies;
        const {
@@ -200,7 +200,7 @@ app.post("/places" , (req , res)=>{
 })
 
 
-app.get("/user-places" , (req , res)=>{
+app.get("/api/user-places" , (req , res)=>{
     connectDB();
     const {token} = req.cookies;
     jwt.verify(token , process.env.JWT_SECRET , {} , async (error , userData)=>{
@@ -210,7 +210,7 @@ app.get("/user-places" , (req , res)=>{
     });
 })
 
-app.put("/places" , async (req , res)=>{
+app.put("/api/places" , async (req , res)=>{
     connectDB();
     const {token} = req.cookies;
        const {
@@ -230,19 +230,19 @@ app.put("/places" , async (req , res)=>{
     });
 })
 
-app.get("/places/:id" , async (req , res)=>{
+app.get("/api/places/:id" , async (req , res)=>{
     connectDB();
     const {id} = req.params;
     res.json(await Place.findById(id));
 })
 
 
-app.get("/places" , async(req , res)=>{
+app.get("/api/places" , async(req , res)=>{
     connectDB();
     res.json(await Place.find());
 })
 
-app.post("/bookings" ,  async (req , res)=>{
+app.post("/api/bookings" ,  async (req , res)=>{
     connectDB();
     const userData = await getUserDataFromReq(req);
     const {
@@ -259,7 +259,7 @@ app.post("/bookings" ,  async (req , res)=>{
 })
 
 
-app.get("/bookings" , async (req , res)=>{
+app.get("/api/bookings" , async (req , res)=>{
     connectDB();
     const userdata =  await getUserDataFromReq(req);
     res.json(await Booking.find({user:userdata._id}).populate('place'));
