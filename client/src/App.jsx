@@ -1,6 +1,6 @@
 import { Routes , Route } from "react-router-dom"
 import IndexPage from "./pages/IndexPage"
-import Login from "./pages/login"
+import Login from "./pages/Login"
 import Layout from "./Layout"
 import Register from "./pages/Register"
 import axios from "axios"
