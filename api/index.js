@@ -13,6 +13,7 @@ import Place from "./models/Place.js";
 import Booking from "./models/Booking.js";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import mime from "mime-types";
+import Referal from "./models/Referal.js";
 
 const app = express();
 const bucket = process.env.BUCKET_NAME;
@@ -317,6 +318,70 @@ app.get("/api/bookings", async (req, res) => {
   const userdata = await getUserDataFromReq(req);
   res.json(await Booking.find({ user: userdata._id }).populate("place"));
 });
+
+app.post("/api/webhook", async (req, res) => {
+  const CLERK_WEBHOOK_SIGNING_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+  if (!CLERK_WEBHOOK_SIGNING_SECRET) {
+    throw new Error("You need a CLERK_WEBHOOK_SIGNING_SECRET in your .env");
+  }
+  const headers = req.headers;
+  const payload = req.body;
+  const svix_id = headers["svix-id"];
+  const svix_timestamp = headers["svix-timestamp"];
+  const svix_signature = headers["svix-signature"];
+
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new Response("Error occured -- no svix headers", {
+      status: 400,
+    });
+  }
+  // https://clerk.com/docs/integrations/webhooks/sync-data || for learning purpose visit
+  const wh = new Webhook(CLERK_WEBHOOK_SIGNING_SECRET);
+
+  let evt;
+  try {
+    evt = wh.verify(payload, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    });
+  } catch (err) {
+    console.log("Error verifying webhook:", err.message);
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+  const { id } = evt.data;
+  const eventType = evt.type;
+  try {
+    if (eventType === "user.created") {
+      await user_created(evt.data);
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Webhook received",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "DataBase issue",
+    });
+  }
+});
+
+const user_created = async (data) => {
+  try {
+    const { first_name, id, profile_image_url, email_addresses } = data;
+    await Referal.create({
+      user_id: id,
+      name: first_name,
+      email: email_addresses[0]?.email_address ?? "",
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 app.listen(3000, () => {
   connectDB();
